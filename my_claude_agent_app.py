@@ -67,6 +67,7 @@ import traceback
 import tempfile
 import shutil
 import collections
+import webbrowser
 from datetime import datetime
 from tkinter import filedialog, messagebox
 
@@ -182,9 +183,11 @@ SYSTEM_PROMPT = (
     "front-ends (commonly React); financial analysis and reporting (reading CSV/PDF "
     "inputs, producing Excel/Word outputs); general writing in Word or Markdown; "
     "and ordinary conversation, research, or brainstorming.\n\n"
-    "Billing: This application uses the Anthropic API. If the user has an active "
-    "monthly subscription on their Anthropic account, it will be used automatically. "
-    "Otherwise, requests are billed at the per-API-call rate.\n\n"
+    "Billing: this app connects via the Anthropic API using the user's API key, "
+    "billed separately from any claude.ai subscription (Pro/Max) they may have - "
+    "a subscription does not apply to API usage. Usage, credits, and rate limits "
+    "for the API key are managed in the Anthropic Console (console.anthropic.com), "
+    "not by this app.\n\n"
     "Tools available to you:\n"
     "  - manage_local_file: read/write/delete TEXT files (source code, markdown, "
     "CSV, config, etc.) inside a configured workspace folder. Do NOT use this to "
@@ -1104,26 +1107,23 @@ class ClaudeAgentApp(ctk.CTk):
             anchor="w", justify="left", wraplength=250, text_color="#AAAAAA", font=("", 10),
         ).pack(fill="x", padx=4, pady=(0, 10))
 
-        ctk.CTkLabel(scroll_frame, text="Billing Method", anchor="w").pack(fill="x", **pad)
-        self.billing_var = ctk.StringVar(value="automatic")
-        billing_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-        billing_frame.pack(fill="x", padx=4, pady=(0, 8))
-        
-        ctk.CTkLabel(billing_frame, text="Automatic: Use subscription if active, else pay-as-you-go", 
-                     font=("", 9), text_color="#AAAAAA").pack(anchor="w", padx=0, pady=1)
-        ctk.CTkRadioButton(billing_frame, text="Automatic (Recommended)", variable=self.billing_var, 
-                          value="automatic", command=self._update_billing_display).pack(anchor="w", padx=0, pady=2)
-        
-        ctk.CTkLabel(billing_frame, text="Note: Subscription is used if active on your Anthropic account", 
-                     font=("", 9), text_color="#AAAAAA").pack(anchor="w", padx=20, pady=(0, 4))
-        
-        ctk.CTkRadioButton(billing_frame, text="Pay-as-you-go (API only)", variable=self.billing_var, 
-                          value="api_only", command=self._update_billing_display).pack(anchor="w", padx=0, pady=2)
-        
-        self.billing_info_label = ctk.CTkLabel(scroll_frame, 
-                                              text="Current billing: Using subscription if active",
-                                              font=("", 9), text_color="#7CFC00")
-        self.billing_info_label.pack(fill="x", padx=4, pady=(0, 10))
+        ctk.CTkLabel(scroll_frame, text="Usage & Billing", anchor="w").pack(fill="x", **pad)
+        ctk.CTkLabel(
+            scroll_frame,
+            text=(
+                "API usage, credits, and rate limits are managed in the "
+                "Anthropic Console, not in this app. A claude.ai subscription "
+                "(Pro/Max) does not apply to API usage - they're billed "
+                "separately."
+            ),
+            anchor="w", justify="left", wraplength=250, text_color="#AAAAAA", font=("", 10),
+        ).pack(fill="x", padx=4, pady=(0, 2))
+        console_link = ctk.CTkLabel(
+            scroll_frame, text="Open Anthropic Console \u2192",
+            text_color="#4FA8FF", font=("", 10, "underline"), cursor="hand2", anchor="w",
+        )
+        console_link.pack(fill="x", padx=4, pady=(0, 10))
+        console_link.bind("<Button-1>", lambda e: webbrowser.open("https://console.anthropic.com/"))
 
         ctk.CTkLabel(scroll_frame, text="Pre-approve actions (set & forget)", anchor="w").pack(fill="x", **pad)
         self.preapprove_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
@@ -1312,10 +1312,7 @@ class ClaudeAgentApp(ctk.CTk):
         self.com_port_var.set(cfg.get("com_port", "COM3"))
         self.baud_var.set(str(cfg.get("baud", DEFAULT_BAUD)))
         self.show_serial_var.set(bool(cfg.get("show_serial", False)))
-        
-        # Load billing method preference
-        self.billing_var.set(cfg.get("billing_method", "automatic"))
-        
+
         # Load pre-approval settings (default to True for convenience)
         self.preapprove_write_var.set(bool(cfg.get("preapprove_write", True)))
         self.preapprove_shell_var.set(bool(cfg.get("preapprove_shell", True)))
@@ -1353,7 +1350,6 @@ class ClaudeAgentApp(ctk.CTk):
             "preapprove_shell": self.preapprove_shell_var.get(),
             "preapprove_python": self.preapprove_python_var.get(),
             "preapprove_serial": self.preapprove_serial_var.get(),
-            "billing_method": self.billing_var.get(),
         }
         if self.remember_key_var.get():
             cfg["api_key"] = self.api_key_entry.get().strip()
@@ -1391,19 +1387,6 @@ class ClaudeAgentApp(ctk.CTk):
     def reset_auto_approvals(self):
         self.auto_approved_tools.clear()
         self.auto_approved_label.configure(text="(none - read-only actions are always pre-approved)")
-
-    def _update_billing_display(self):
-        """Update the billing display based on selection."""
-        if self.billing_var.get() == "automatic":
-            self.billing_info_label.configure(
-                text="Current billing: Using subscription if active (recommended)",
-                text_color="#7CFC00"
-            )
-        else:
-            self.billing_info_label.configure(
-                text="Current billing: Pay-as-you-go (API only - charges per request)",
-                text_color="#FFD700"
-            )
 
     def _update_preapprovals(self):
         """Update the set of pre-approved tools based on checkboxes."""
