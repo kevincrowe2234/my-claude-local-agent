@@ -1,0 +1,12 @@
+customtkinter>=5.2
+# anthropic 1.x+ requires Python 3.10+ and unlocks the optional auto-compaction
+# beta feature; on Python 3.9, pip installs the newest available 0.x release
+# instead, which the app already falls back to gracefully (no compaction, but
+# fully functional otherwise). Upgrade to Python 3.10+ later if you want
+# compaction; no need to re-run this file, just: pip install --upgrade anthropic
+anthropic
+pyserial>=3.5
+pandas
+openpyxl
+python-docx
+pdfplumber

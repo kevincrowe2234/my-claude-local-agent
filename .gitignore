@@ -1,0 +1,16 @@
+# Personal settings and data - never publish these
+agent_config.json
+conversations/
+
+# Windows shortcut - machine-specific paths, regenerate with Create-TaskbarShortcut.ps1
+*.lnk
+
+# Python cache / temp
+__pycache__/
+*.pyc
+.agent_tmp/
+.mypy_cache/
+
+# Editor/OS cruft
+.vscode/
+Thumbs.db
